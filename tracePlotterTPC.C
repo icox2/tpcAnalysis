@@ -14,7 +14,8 @@
 #include <TTreeReaderArray.h>
 #include <ProcessorRootStruc.hpp>
 
-double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound, unsigned int maxLocation);
+double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound, int maxLocation);
+unsigned int maxCalculator(vector<double> trace);
 
 void tracePlotterTPC(){
   //TFile *_file0 = TFile::Open("yso_vault05_bigEvent_DD.root");
@@ -128,8 +129,9 @@ void tracePlotterTPC(){
           dynTraceHigh->Fill(it,trace.at(it));
           dynodeTrace.push_back(trace.at(it));
 	}
-        qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
-        qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
+        int maxLoc = maxCalculator(dynodeTrace);
+        qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort, maxLoc);
+        qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong, maxLoc);
         qdcRatio->Fill(qdcShort,qdcLong);
       dynTime = time;
 	  dynEnergy->Fill(energy);
@@ -192,7 +194,7 @@ void tracePlotterTPC(){
 
 //Function for calculating the QDC
 
-double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound){
+double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound, int maxLocation){
     //first subtract baseline
     double  baseline = trace[0];
     for (int j=0; j<trace.size();j++){
@@ -205,4 +207,9 @@ double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int h
         integral += 0.5 * (double(trace[i-1] + trace[i]));
     }
     return integral;
+}
+
+int maxCalculator(vector<double> trace){
+    int maxLoc = max_element(trace.begin(), trace.end());
+    return maxLoc;
 }
