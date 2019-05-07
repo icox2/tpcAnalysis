@@ -14,6 +14,7 @@
 #include <TTreeReaderArray.h>
 #include <ProcessorRootStruc.hpp>
 
+double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound);
 
 void tracePlotterTPC(){
   TFile *_file0 = TFile::Open("yso_vault05_bigEvent_DD.root");
@@ -31,16 +32,17 @@ void tracePlotterTPC(){
   c2->SetLogz();
   TH2D* dynTraceLow=new TH2D("dynTraceLow","dynTraces Low Gain",5000.,0.,5000.,5000,0.,5000.);
   TH2D* dynTraceHigh=new TH2D("dynTraceHigh","dynTraces High Gain",250.,0.,250.,5000,0.,5000.);
-  TH2D* xaTrace=new TH2D("xaTrace","xaTraces",250.,0.,250.,5000,0.,5000.);
+  /*TH2D* xaTrace=new TH2D("xaTrace","xaTraces",250.,0.,250.,5000,0.,5000.);
   TH2D* xbTrace=new TH2D("xbTrace","xbTraces",250.,0.,250.,5000,0.,5000.);
   TH2D* yaTrace=new TH2D("yaTrace","yaTraces",250.,0.,250.,5000,0.,5000.);
-  TH2D* ybTrace=new TH2D("ybTrace","ybTraces",250.,0.,250.,5000,0.,5000.);
+  TH2D* ybTrace=new TH2D("ybTrace","ybTraces",250.,0.,250.,5000,0.,5000.); */
   TH2D* positionLow=new TH2D("positionLow","Positions Low Gain",250.,0.,25.,250.,0.,25.);
   TH2D* positionHigh=new TH2D("positionHigh","Positions High Gain",250.,0.,25.,250.,0.,25.);
   TH2D* siTrace=new TH2D("siTrace","siTraces",2500.,0.,2500.,2500,0.,2500.);
   TH1D* timeDiff=new TH1D("timeDiff","timeDifferences",1000.,-500.,500.);
   TH1D* siEnergy=new TH1D("siEnergy","siEnergies",1800.,0.,18000.);
   TH1D* dynEnergy=new TH1D("dynEnergy","dynEnergies",4000.,0.,40000.);
+  TH2D* qdcRatio=new TH2D("qdcRatio","ShortQDC vs LongQDC",1000.,0.,10000.,1000.,0.,10000.);
 
   int eventNum=0;
 
@@ -82,37 +84,48 @@ void tracePlotterTPC(){
 	siE = energy;
       }
     else if (dtype == "anode_low" && dgroup == "xa"){
-      for (unsigned int it=0,itend = trace.size();it<itend;it++){
-	xaTrace->Fill(it,trace.at(it));
-	}
+      /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
+          xaTrace->Fill(it,trace.at(it));
+      }*/
 	xal = energy;
       }
     else if (dtype == "anode_low" && dgroup == "xb"){
-      for (unsigned int it=0,itend = trace.size();it<itend;it++){
-	xbTrace->Fill(it,trace.at(it));
-	}
+      /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
+          xbTrace->Fill(it,trace.at(it));
+      }*/
 	xbl = energy;
       }
     else if (dtype == "anode_low" && dgroup == "ya"){
-      for (unsigned int it=0,itend = trace.size();it<itend;it++){
-	yaTrace->Fill(it,trace.at(it));
-	}
+      /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
+          yaTrace->Fill(it,trace.at(it));
+      }*/
 	yal = energy;
       }
     else if (dtype == "anode_low" && dgroup == "yb"){
-      for (unsigned int it=0,itend = trace.size();it<itend;it++){
-	ybTrace->Fill(it,trace.at(it));
-	}
+      /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
+          ybTrace->Fill(it,trace.at(it));
+      }*/
 	ybl = energy;
       }
     else if(dtype == "dynode_high"){
+        vector<double> dynodeTrace;
+        double qdcShort = 0.0, qdcLong = 0.0;
+        unsigned int lowBoundShort = 5;
+        unsigned int highBoundShort = 7 + lowBoundShort;
+        unsigned int lowBoundLong = 1 + highBoundShort;
+        unsigned int highBoundLong = 40 + lowBoundLong;
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
-	dynTraceHigh->Fill(it,trace.at(it));
-	dynTime = time;
-	dynEnergy->Fill(energy);
-	dynodeElow = energy;
+          dynTraceHigh->Fill(it,trace.at(it));
+          dynodeTrace.push_back(trace.at(it));
       }
-      }
+        qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
+        qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
+        qdcRatio->Fill(qdcShort,qdcLong);
+      dynTime = time;
+	  dynEnergy->Fill(energy);
+	  dynodeElow = energy;
+      
+    }
     /*else if (dtype == "anode_high" && dgroup == "xa"){
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
 	//xaTrace->Fill(it,trace.at(it));
@@ -165,4 +178,21 @@ void tracePlotterTPC(){
   
   c2->cd();
   siEnergy->Draw();
+}
+
+//Function for calculating the QDC
+
+double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound){
+    //first subtract baseline
+    baseline = trace.begin();
+    for (int j=0; j<trace.size();j++){
+        trace[j] = trace[j] - baseline;
+    }
+    
+    //calculate integral after baseline
+    double integral = 0.0;
+    for (int i=lowBound; i<highBound;i++){
+        integral += 0.5 * (double(trace[i-1] + trace[i]))
+    }
+    return integral;
 }
