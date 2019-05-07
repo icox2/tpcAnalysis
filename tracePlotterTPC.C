@@ -14,7 +14,7 @@
 #include <TTreeReaderArray.h>
 #include <ProcessorRootStruc.hpp>
 
-double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound);
+double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound, unsigned int maxLocation);
 
 void tracePlotterTPC(){
   //TFile *_file0 = TFile::Open("yso_vault05_bigEvent_DD.root");
@@ -30,7 +30,7 @@ void tracePlotterTPC(){
   TCanvas* c2 = new TCanvas("c2","c2",1200,600);
   c1->SetLogz();
   c2->SetLogz();
-  TH2D* dynTraceLow=new TH2D("dynTraceLow","dynTraces Low Gain",5000.,0.,5000.,5000,0.,5000.);
+  TH2D* dynTraceLow=new TH2D("dynTraceLow","dynTraces Low Gain",250.,0.,250.,5000,0.,5000.);
   TH2D* dynTraceHigh=new TH2D("dynTraceHigh","dynTraces High Gain",250.,0.,250.,5000,0.,5000.);
   /*TH2D* xaTrace=new TH2D("xaTrace","xaTraces",250.,0.,250.,5000,0.,5000.);
   TH2D* xbTrace=new TH2D("xbTrace","xbTraces",250.,0.,250.,5000,0.,5000.);
@@ -42,7 +42,7 @@ void tracePlotterTPC(){
   TH1D* timeDiff=new TH1D("timeDiff","timeDifferences",1000.,-500.,500.);
   TH1D* siEnergy=new TH1D("siEnergy","siEnergies",1800.,0.,18000.);
   TH1D* dynEnergy=new TH1D("dynEnergy","dynEnergies",4000.,0.,40000.);
-  TH2D* qdcRatio=new TH2D("qdcRatio","ShortQDC vs LongQDC",1000.,0.,10000.,1000.,0.,10000.);
+  TH2D* qdcRatio=new TH2D("qdcRatio","L vs. S",2000.,0.,2000.,200.,0.,20.);
 
   int eventNum=0;
 
@@ -68,10 +68,20 @@ void tracePlotterTPC(){
 	int channel = itC->chanNum;  //used to try and gate on channel number rather than group/subtype
 
     if (dtype == "dynode_low"){
+       vector<double> dynodeTrace;
+        double qdcShort = 0.0, qdcLong = 0.0;
+        unsigned int lowBoundShort = 12;
+        unsigned int highBoundShort = 4 + lowBoundShort;
+        unsigned int lowBoundLong = 1 + highBoundShort;
+        unsigned int highBoundLong = 20 + lowBoundLong;
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
 	dynTraceLow->Fill(it,trace.at(it));
+	dynodeTrace.push_back(trace.at(it));
 	}
-	dynTime = time;
+        qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
+        qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
+        qdcRatio->Fill(qdcShort,qdcLong);
+	 dynTime = time;
 	dynEnergy->Fill(energy);
 	dynodeElow = energy;
       }
@@ -110,14 +120,14 @@ void tracePlotterTPC(){
     else if(dtype == "dynode_high"){
         vector<double> dynodeTrace;
         double qdcShort = 0.0, qdcLong = 0.0;
-        unsigned int lowBoundShort = 5;
-        unsigned int highBoundShort = 7 + lowBoundShort;
+        unsigned int lowBoundShort = 25;
+        unsigned int highBoundShort = 8 + lowBoundShort;
         unsigned int lowBoundLong = 1 + highBoundShort;
-        unsigned int highBoundLong = 40 + lowBoundLong;
+        unsigned int highBoundLong = 80 + lowBoundLong;
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
           dynTraceHigh->Fill(it,trace.at(it));
           dynodeTrace.push_back(trace.at(it));
-      }
+	}
         qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
         qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
         qdcRatio->Fill(qdcShort,qdcLong);
@@ -174,10 +184,10 @@ void tracePlotterTPC(){
   }
 
   c1->cd();
-  positionLow->Draw("colz");
+  qdcRatio->Draw("colz");
   
   c2->cd();
-  dynEnergy->Draw();
+  dynTraceLow->Draw("colz");
 }
 
 //Function for calculating the QDC
