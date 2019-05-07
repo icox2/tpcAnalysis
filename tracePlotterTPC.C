@@ -17,7 +17,7 @@
 double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound);
 
 void tracePlotterTPC(){
-  TFile *_file0 = TFile::Open("yso_vault05_bigEvent_DD.root");
+  //TFile *_file0 = TFile::Open("yso_vault05_bigEvent_DD.root");
   TTree *GS = (TTree*)_file0->Get("PixTree");
   TTreeReader singe;
   cout<<"readermade"<<endl;
@@ -177,14 +177,14 @@ void tracePlotterTPC(){
   positionLow->Draw("colz");
   
   c2->cd();
-  siEnergy->Draw();
+  dynEnergy->Draw();
 }
 
 //Function for calculating the QDC
 
 double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound){
     //first subtract baseline
-    baseline = trace.begin();
+    double  baseline = trace[0];
     for (int j=0; j<trace.size();j++){
         trace[j] = trace[j] - baseline;
     }
@@ -192,7 +192,7 @@ double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int h
     //calculate integral after baseline
     double integral = 0.0;
     for (int i=lowBound; i<highBound;i++){
-        integral += 0.5 * (double(trace[i-1] + trace[i]))
+        integral += 0.5 * (double(trace[i-1] + trace[i]));
     }
     return integral;
 }
