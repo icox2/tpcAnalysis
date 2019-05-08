@@ -14,8 +14,8 @@
 #include <TTreeReaderArray.h>
 #include <ProcessorRootStruc.hpp>
 
-double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound, int maxLocation);
-unsigned int maxCalculator(vector<double> trace);
+double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound);
+int maxCalculator(vector<double> trace);
 
 void tracePlotterTPC(){
   //TFile *_file0 = TFile::Open("yso_vault05_bigEvent_DD.root");
@@ -43,7 +43,7 @@ void tracePlotterTPC(){
   TH1D* timeDiff=new TH1D("timeDiff","timeDifferences",1000.,-500.,500.);
   TH1D* siEnergy=new TH1D("siEnergy","siEnergies",1800.,0.,18000.);
   TH1D* dynEnergy=new TH1D("dynEnergy","dynEnergies",4000.,0.,40000.);
-  TH2D* qdcRatio=new TH2D("qdcRatio","L vs. S",2000.,0.,2000.,200.,0.,20.);
+  TH2D* qdcRatio=new TH2D("qdcRatio","L vs. S",300.,0.,6000.,600.,0.,12000.);
 
   int eventNum=0;
 
@@ -71,17 +71,18 @@ void tracePlotterTPC(){
     if (dtype == "dynode_low"){
        vector<double> dynodeTrace;
         double qdcShort = 0.0, qdcLong = 0.0;
-        unsigned int lowBoundShort = 12;
-        unsigned int highBoundShort = 4 + lowBoundShort;
-        unsigned int lowBoundLong = 1 + highBoundShort;
-        unsigned int highBoundLong = 20 + lowBoundLong;
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
 	dynTraceLow->Fill(it,trace.at(it));
 	dynodeTrace.push_back(trace.at(it));
 	}
+       	int maxLoc = maxCalculator(dynodeTrace);
+        unsigned int lowBoundShort = maxLoc - 7;
+        unsigned int highBoundShort = maxLoc + 8;
+        unsigned int lowBoundLong = 1 + highBoundShort;
+        unsigned int highBoundLong = 20 + lowBoundLong;
         qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
         qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
-        qdcRatio->Fill(qdcShort,qdcLong);
+        if(qdcShort>0 && qdcLong>0){qdcRatio->Fill(qdcShort,qdcLong);}
 	 dynTime = time;
 	dynEnergy->Fill(energy);
 	dynodeElow = energy;
@@ -121,19 +122,19 @@ void tracePlotterTPC(){
     else if(dtype == "dynode_high"){
         vector<double> dynodeTrace;
         double qdcShort = 0.0, qdcLong = 0.0;
-        unsigned int lowBoundShort = 25;
-        unsigned int highBoundShort = 8 + lowBoundShort;
-        unsigned int lowBoundLong = 1 + highBoundShort;
-        unsigned int highBoundLong = 80 + lowBoundLong;
-      for (unsigned int it=0,itend = trace.size();it<itend;it++){
+       for (unsigned int it=0,itend = trace.size();it<itend;it++){
           dynTraceHigh->Fill(it,trace.at(it));
           dynodeTrace.push_back(trace.at(it));
-	}
+	} 
         int maxLoc = maxCalculator(dynodeTrace);
-        qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort, maxLoc);
-        qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong, maxLoc);
-        qdcRatio->Fill(qdcShort,qdcLong);
-      dynTime = time;
+	unsigned int lowBoundShort = maxLoc - 7;
+        unsigned int highBoundShort = maxLoc + 8;
+        unsigned int lowBoundLong = 1 + highBoundShort;
+        unsigned int highBoundLong = 20 + lowBoundLong;
+        qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
+        qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
+        if(qdcShort>0 && qdcLong>0){qdcRatio->Fill(qdcShort,qdcLong);}
+        dynTime = time;
 	  dynEnergy->Fill(energy);
 	  dynodeElow = energy;
       
@@ -185,16 +186,16 @@ void tracePlotterTPC(){
 
   }
 
-  c1->cd();
+  c2->cd();
   qdcRatio->Draw("colz");
   
-  c2->cd();
+  c1->cd();
   dynTraceLow->Draw("colz");
 }
 
 //Function for calculating the QDC
 
-double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound, int maxLocation){
+double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound){
     //first subtract baseline
     double  baseline = trace[0];
     for (int j=0; j<trace.size();j++){
@@ -210,6 +211,9 @@ double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int h
 }
 
 int maxCalculator(vector<double> trace){
-    int maxLoc = max_element(trace.begin(), trace.end());
-    return maxLoc;
+	int maxLoc = 0;
+	for(int i=1;i<trace.size();i++){
+		    if(trace[i]>trace[i-1]){maxLoc = i;}
+	}
+	return maxLoc;
 }
