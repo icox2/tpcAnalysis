@@ -58,7 +58,9 @@ void tracePlotterTPC(){
     double xah=0, xbh=0, yah=0, ybh=0;
     double xposh=0, yposh=0;  //high gain 
     double siTime=0, dynTime=0;
-    double dynodeElow = 0, siE = 0;
+    double dynodeElow = 0, dynodeEhigh=0, siE = 0;
+    double qdcShortL = 0.0, qdcLongL = 0.0;
+    double qdcShortH = 0.0, qdcLongH = 0.0;
 
     for(auto itC = rd.begin(); itC!=rd.end();itC++){
 	std::vector<unsigned> trace = itC->trace;
@@ -70,31 +72,27 @@ void tracePlotterTPC(){
 
     if (dtype == "dynode_low"){
        vector<double> dynodeTrace;
-        double qdcShort = 0.0, qdcLong = 0.0;
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
-	dynTraceLow->Fill(it,trace.at(it));
-	dynodeTrace.push_back(trace.at(it));
-	}
+          dynTraceLow->Fill(it,trace.at(it));
+          dynodeTrace.push_back(trace.at(it));
+	  }
        	int maxLoc = maxCalculator(dynodeTrace);
-        unsigned int lowBoundShort = maxLoc - 7;
-        unsigned int highBoundShort = maxLoc + 8;
+        unsigned int lowBoundShort = maxLoc - 28;
+        unsigned int highBoundShort = maxLoc + 20;
         unsigned int lowBoundLong = 1 + highBoundShort;
-        unsigned int highBoundLong = 20 + lowBoundLong;
-	qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
-        qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
-        if(qdcShort>0 && qdcLong>0){qdcRatio->Fill(qdcShort,qdcLong);}
-	 dynTime = time;
-	dynEnergy->Fill(energy);
-	dynodeElow = energy;
-      }
+        unsigned int highBoundLong = 250;
+        qdcShortL = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
+        qdcLongL = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
+        dynTime = time;
+        dynodeElow = energy;
+    }
      else if (channel == 6){
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
-	siTrace->Fill(it,trace.at(it));
-	}
-	siTime = time;
-	siEnergy->Fill(energy);
-	siE = energy;
+          siTrace->Fill(it,trace.at(it));
       }
+      siTime = time;
+	  siE = energy;
+     }
     else if (dtype == "anode_low" && dgroup == "xa"){
       /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
           xaTrace->Fill(it,trace.at(it));
@@ -121,26 +119,19 @@ void tracePlotterTPC(){
       }
     else if(dtype == "dynode_high"){
         vector<double> dynodeTrace;
-        double qdcShort = 0.0, qdcLong = 0.0;
        for (unsigned int it=0,itend = trace.size();it<itend;it++){
-          //if(siE>800 && siE<1300)
-	  dynTraceHigh->Fill(it,trace.at(it));
-          dynodeTrace.push_back(trace.at(it));
-	} 
+           dynTraceHigh->Fill(it,trace.at(it));
+           dynodeTrace.push_back(trace.at(it));
+       }
         int maxLoc = maxCalculator(dynodeTrace);
-	unsigned int lowBoundShort = maxLoc - 28;
+        unsigned int lowBoundShort = maxLoc - 28;
         unsigned int highBoundShort = maxLoc + 20;
         unsigned int lowBoundLong = 1 + highBoundShort;
         unsigned int highBoundLong = 250;
-        //cout<<dynodeTrace.size()<<" "<<maxLoc<<endl;
-        qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
-        qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
-        //if(siE>800 && siE<1300)
-		qdcRatio->Fill(qdcShort,qdcLong);
+        qdcShortH = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
+        qdcLongH = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
         dynTime = time;
-	  dynEnergy->Fill(energy);
-	  dynodeElow = energy;
-      
+        dynodeEhigh = energy;
     }
     /*else if (dtype == "anode_high" && dgroup == "xa"){
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
@@ -168,6 +159,12 @@ void tracePlotterTPC(){
       } */
     }
 
+      //Section for filling plots
+      
+      siEnergy->Fill(siE);
+      dynEnergy->Fill(dynodeEhigh); //can be changed to low
+      qdcRatio->Fill(qdcShortH,qdcLongH);  //for the H for high gain L for low gain plotting
+      
    if(xah > 0 && xbh > 0 && yah > 0 && ybh > 0){
 	//xpos = 25 * ((xa + xb) - (ya +yb)) / (xa + xb + ya + yb);
 	//ypos = 25 * ((xa + yb) - (xb +ya)) / (xa + xb + ya + yb);
@@ -219,6 +216,8 @@ double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int h
     }
     return integral;
 }
+
+//Function for calculating the location of the maximum value in a trace
 
 int maxCalculator(vector<double> trace){
 	int maxLoc = 0;
