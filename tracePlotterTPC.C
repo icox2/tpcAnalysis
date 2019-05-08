@@ -43,7 +43,7 @@ void tracePlotterTPC(){
   TH1D* timeDiff=new TH1D("timeDiff","timeDifferences",1000.,-500.,500.);
   TH1D* siEnergy=new TH1D("siEnergy","siEnergies",1800.,0.,18000.);
   TH1D* dynEnergy=new TH1D("dynEnergy","dynEnergies",4000.,0.,40000.);
-  TH2D* qdcRatio=new TH2D("qdcRatio","L vs. S",300.,0.,6000.,600.,0.,12000.);
+  TH2D* qdcRatio=new TH2D("qdcRatio","Long Integral vs. Short Integral",300.,0.,6000.,700.,-2000.,12000.);
 
   int eventNum=0;
 
@@ -80,7 +80,7 @@ void tracePlotterTPC(){
         unsigned int highBoundShort = maxLoc + 8;
         unsigned int lowBoundLong = 1 + highBoundShort;
         unsigned int highBoundLong = 20 + lowBoundLong;
-        qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
+	qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
         qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
         if(qdcShort>0 && qdcLong>0){qdcRatio->Fill(qdcShort,qdcLong);}
 	 dynTime = time;
@@ -123,17 +123,20 @@ void tracePlotterTPC(){
         vector<double> dynodeTrace;
         double qdcShort = 0.0, qdcLong = 0.0;
        for (unsigned int it=0,itend = trace.size();it<itend;it++){
-          dynTraceHigh->Fill(it,trace.at(it));
+          //if(siE>800 && siE<1300)
+	  dynTraceHigh->Fill(it,trace.at(it));
           dynodeTrace.push_back(trace.at(it));
 	} 
         int maxLoc = maxCalculator(dynodeTrace);
-	unsigned int lowBoundShort = maxLoc - 7;
-        unsigned int highBoundShort = maxLoc + 8;
+	unsigned int lowBoundShort = maxLoc - 28;
+        unsigned int highBoundShort = maxLoc + 20;
         unsigned int lowBoundLong = 1 + highBoundShort;
-        unsigned int highBoundLong = 20 + lowBoundLong;
+        unsigned int highBoundLong = 250;
+        //cout<<dynodeTrace.size()<<" "<<maxLoc<<endl;
         qdcShort = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
         qdcLong = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
-        if(qdcShort>0 && qdcLong>0){qdcRatio->Fill(qdcShort,qdcLong);}
+        //if(siE>800 && siE<1300)
+		qdcRatio->Fill(qdcShort,qdcLong);
         dynTime = time;
 	  dynEnergy->Fill(energy);
 	  dynodeElow = energy;
@@ -190,18 +193,25 @@ void tracePlotterTPC(){
   qdcRatio->Draw("colz");
   
   c1->cd();
-  dynTraceLow->Draw("colz");
+  dynTraceHigh->Draw("colz");
 }
 
 //Function for calculating the QDC
 
 double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound){
     //first subtract baseline
-    double  baseline = trace[0];
+    double baseSum = 0;
+    for(int j=0;j<20;j++){
+	baseSum += trace[j];
+    }
+    double  baseline = baseSum/20;
     for (int j=0; j<trace.size();j++){
         trace[j] = trace[j] - baseline;
     }
-    
+    /*if(highBound>trace.size()){
+	cout<<"Upper bound is greater than trace length"<<endl;
+	return 0;
+    } */
     //calculate integral after baseline
     double integral = 0.0;
     for (int i=lowBound; i<highBound;i++){
@@ -213,7 +223,7 @@ double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int h
 int maxCalculator(vector<double> trace){
 	int maxLoc = 0;
 	for(int i=1;i<trace.size();i++){
-		    if(trace[i]>trace[i-1]){maxLoc = i;}
+		    if(trace[i]>trace[maxLoc]){maxLoc = i;}
 	}
 	return maxLoc;
 }
