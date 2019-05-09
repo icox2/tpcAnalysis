@@ -43,8 +43,9 @@ void tracePlotterTPC(){
   TH1D* timeDiff=new TH1D("timeDiff","timeDifferences",1000.,-500.,500.);
   TH1D* siEnergy=new TH1D("siEnergy","siEnergies",1800.,0.,18000.);
   TH1D* dynEnergy=new TH1D("dynEnergy","dynEnergies",4000.,0.,40000.);
-  TH2D* qdcRatio=new TH2D("qdcRatio","Long Integral vs. Short Integral",300.,0.,6000.,700.,-2000.,12000.);
-
+  TH2D* qdcRatio=new TH2D("qdcRatio","Short/Total vs Total",1000.,0.,10000.,100.,0.,1.);
+  TH1D* traceRatio=new TH1D("traceRatio","trace ratio",100.,0.,1.);
+ 
   int eventNum=0;
 
   while(singe.Next()){
@@ -53,12 +54,12 @@ void tracePlotterTPC(){
     std::string dtype = *type;
     double bgTDiff = *tdiff;
     */	
-    double xal=0, xbl=0, yal=0, ybl=0;
-    double xposl=0, yposl=0;  //low gain
-    double xah=0, xbh=0, yah=0, ybh=0;
-    double xposh=0, yposh=0;  //high gain 
-    double siTime=0, dynTime=0;
-    double dynodeElow = 0, dynodeEhigh=0, siE = 0;
+    double xal=0.0, xbl=0.0, yal=0.0, ybl=0.0;
+    double xposl=0.0, yposl=0.0;  //low gain
+    double xah=0.0, xbh=0., yah=0., ybh=0.;
+    double xposh=0., yposh=0.;  //high gain 
+    double siTime=0., dynTime=0.;
+    double dynodeElow = 0., dynodeEhigh=0., siE = 0.;
     double qdcShortL = 0.0, qdcLongL = 0.0;
     double qdcShortH = 0.0, qdcLongH = 0.0;
 
@@ -85,6 +86,8 @@ void tracePlotterTPC(){
         qdcLongL = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
         dynTime = time;
         dynodeElow = energy;
+       qdcRatio->Fill(qdcShortL,qdcLongL);  //for the H for high gain L for low gain plotting
+	traceRatio->Fill(qdcShortL/(qdcShortL+qdcLongL));    
     }
      else if (channel == 6){
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
@@ -128,10 +131,14 @@ void tracePlotterTPC(){
         unsigned int highBoundShort = maxLoc + 20;
         unsigned int lowBoundLong = 1 + highBoundShort;
         unsigned int highBoundLong = 250;
-        qdcShortH = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
-        qdcLongH = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
-        dynTime = time;
+        if(dynodeTrace[maxLoc]<4090){
+		qdcShortH = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
+        	qdcLongH = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
+        	traceRatio->Fill(qdcShortH/(qdcShortH+qdcLongH));    
+	 }
+	dynTime = time;
         dynodeEhigh = energy;
+      qdcRatio->Fill((qdcLongH+qdcShortH),qdcShortH/(qdcLongH+qdcShortH));  //for the H for high gain L for low gain plotting
     }
     /*else if (dtype == "anode_high" && dgroup == "xa"){
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
@@ -157,14 +164,15 @@ void tracePlotterTPC(){
 	}
 	ybh = energy;
       } */
+      //if(qdcLongH>0.5*qdcShortH && qdcLongH<2*qdcShortH) 
+      siEnergy->Fill(siE);
+      dynEnergy->Fill(dynodeEhigh); //can be changed to low
+
     }
 
       //Section for filling plots
       
-      siEnergy->Fill(siE);
-      dynEnergy->Fill(dynodeEhigh); //can be changed to low
-      qdcRatio->Fill(qdcShortH,qdcLongH);  //for the H for high gain L for low gain plotting
-      
+     
    if(xah > 0 && xbh > 0 && yah > 0 && ybh > 0){
 	//xpos = 25 * ((xa + xb) - (ya +yb)) / (xa + xb + ya + yb);
 	//ypos = 25 * ((xa + yb) - (xb +ya)) / (xa + xb + ya + yb);
@@ -172,7 +180,7 @@ void tracePlotterTPC(){
         yposh = 25 * (xah + xbh) / (xah + xbh + yah + ybh);
 	positionHigh->Fill(xposh,yposh);
        }
-   if(xal > 0 && xbl > 0 && yal > 0 && ybl > 0){
+   if(xal > 0 && xbl > 0 && yal > 0 && ybl > 0 && qdcLongH>2*qdcShortH){
 	//xpos = 25 * ((xa + xb) - (ya +yb)) / (xa + xb + ya + yb);
 	//ypos = 25 * ((xa + yb) - (xb +ya)) / (xa + xb + ya + yb);
         xposl = 25 * (ybl + xal) / (xal + xbl + yal + ybl);
@@ -197,22 +205,15 @@ void tracePlotterTPC(){
 
 double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound){
     //first subtract baseline
-    double baseSum = 0;
+    double baseSum = 0.;
     for(int j=0;j<20;j++){
 	baseSum += trace[j];
     }
-    double  baseline = baseSum/20;
-    for (int j=0; j<trace.size();j++){
-        trace[j] = trace[j] - baseline;
-    }
-    /*if(highBound>trace.size()){
-	cout<<"Upper bound is greater than trace length"<<endl;
-	return 0;
-    } */
-    //calculate integral after baseline
+    double  baseline = baseSum/20.;
+   //calculate integral after baseline
     double integral = 0.0;
     for (int i=lowBound; i<highBound;i++){
-        integral += 0.5 * (double(trace[i-1] + trace[i]));
+        integral += 0.5 * (double(abs(trace[i-1] - baseline) + abs(trace[i] - baseline)));
     }
     return integral;
 }
