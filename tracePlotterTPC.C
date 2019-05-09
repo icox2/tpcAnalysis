@@ -18,7 +18,7 @@ double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int h
 int maxCalculator(vector<double> trace);
 
 void tracePlotterTPC(){
-  //TFile *_file0 = TFile::Open("yso_vault05_bigEvent_DD.root");
+  TFile *_file0 = TFile::Open("yso_vault05_bigEvent_DD.root");
   TTree *GS = (TTree*)_file0->Get("PixTree");
   TTreeReader singe;
   cout<<"readermade"<<endl;
@@ -45,7 +45,29 @@ void tracePlotterTPC(){
   TH1D* dynEnergy=new TH1D("dynEnergy","dynEnergies",4000.,0.,40000.);
   TH2D* qdcRatio=new TH2D("qdcRatio","Short/Total vs Total",1000.,0.,10000.,100.,0.,1.);
   TH1D* traceRatio=new TH1D("traceRatio","trace ratio",100.,0.,1.);
- 
+    
+    double xal=0.0, xbl=0.0, yal=0.0, ybl=0.0;
+    double xposl=0.0, yposl=0.0;  //low gain
+    double xah=0.0, xbh=0., yah=0., ybh=0.;
+    double xposh=0., yposh=0.;  //high gain
+    double siTime=0., dynTime=0.;
+    double dynodeElow = 0., dynodeEhigh=0., siE = 0.;
+    double qdcShortL = 0.0, qdcLongL = 0.0;
+    double qdcShortH = 0.0, qdcLongH = 0.0;
+    vector<double> dynodeTrace, siliconTrace;
+    
+    TFile *newFile = new TFile("newFile.root","RECREATE");
+    TTree *newTree = new TTree("newTree","tree filled with traces and energies etc.");
+  
+    newTree->Branch("dynodeTrace", &dynodeTrace, "Dynode Traces");
+    newTree->Branch("dynodeEnergy", &dynodeEhigh, "Dynode Energy");
+    newTree->Branch("siEnergy", &siE, "delta E Energy");
+    newTree->Branch("siTrace", &siliconTrace, "trace from the delta E");
+    newTree->Branch("shortQDC", &qdcShortH, "qdc from short integral");
+    newTree->Branch("longQDC", &qdcLongH, "qdc from long integral");
+    newTree->Branch("xpos", &xposl, "x position");
+    newTree->Branch("ypos", &yposl, "y position");
+    
   int eventNum=0;
 
   while(singe.Next()){
@@ -53,15 +75,7 @@ void tracePlotterTPC(){
     /*std::vector<unsigned int> traceV = *trace;
     std::string dtype = *type;
     double bgTDiff = *tdiff;
-    */	
-    double xal=0.0, xbl=0.0, yal=0.0, ybl=0.0;
-    double xposl=0.0, yposl=0.0;  //low gain
-    double xah=0.0, xbh=0., yah=0., ybh=0.;
-    double xposh=0., yposh=0.;  //high gain 
-    double siTime=0., dynTime=0.;
-    double dynodeElow = 0., dynodeEhigh=0., siE = 0.;
-    double qdcShortL = 0.0, qdcLongL = 0.0;
-    double qdcShortH = 0.0, qdcLongH = 0.0;
+    */
 
     for(auto itC = rd.begin(); itC!=rd.end();itC++){
 	std::vector<unsigned> trace = itC->trace;
@@ -72,7 +86,6 @@ void tracePlotterTPC(){
 	int channel = itC->chanNum;  //used to try and gate on channel number rather than group/subtype
 
     if (dtype == "dynode_low"){
-       vector<double> dynodeTrace;
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
           dynTraceLow->Fill(it,trace.at(it));
           dynodeTrace.push_back(trace.at(it));
@@ -92,6 +105,7 @@ void tracePlotterTPC(){
      else if (channel == 6){
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
           siTrace->Fill(it,trace.at(it));
+          siliconTrace.push_back(trace.at(it));
       }
       siTime = time;
 	  siE = energy;
@@ -132,13 +146,13 @@ void tracePlotterTPC(){
         unsigned int lowBoundLong = 1 + highBoundShort;
         unsigned int highBoundLong = 250;
         if(dynodeTrace[maxLoc]<4090){
-		qdcShortH = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
+            qdcShortH = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
         	qdcLongH = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
         	traceRatio->Fill(qdcShortH/(qdcShortH+qdcLongH));    
-	 }
-	dynTime = time;
+        }
+        dynTime = time;
         dynodeEhigh = energy;
-      qdcRatio->Fill((qdcLongH+qdcShortH),qdcShortH/(qdcLongH+qdcShortH));  //for the H for high gain L for low gain plotting
+        qdcRatio->Fill((qdcLongH+qdcShortH),qdcShortH/(qdcLongH+qdcShortH));  //for the H for high gain L for low gain plotting
     }
     /*else if (dtype == "anode_high" && dgroup == "xa"){
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
@@ -167,6 +181,8 @@ void tracePlotterTPC(){
       //if(qdcLongH>0.5*qdcShortH && qdcLongH<2*qdcShortH) 
       siEnergy->Fill(siE);
       dynEnergy->Fill(dynodeEhigh); //can be changed to low
+        
+        
 
     }
 
@@ -191,6 +207,8 @@ void tracePlotterTPC(){
    timeDiff->Fill(siTime - dynTime);
 
    eventNum++;
+      
+      newTree->Fill();
 
   }
 
@@ -199,6 +217,8 @@ void tracePlotterTPC(){
   
   c1->cd();
   dynTraceHigh->Draw("colz");
+    
+    newTree->Write();
 }
 
 //Function for calculating the QDC
