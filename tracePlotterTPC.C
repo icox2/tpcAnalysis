@@ -54,13 +54,15 @@ void tracePlotterTPC(){
     double dynodeElow = 0., dynodeEhigh=0., siE = 0.;
     double qdcShortL = 0.0, qdcLongL = 0.0;
     double qdcShortH = 0.0, qdcLongH = 0.0;
-    int maxLoc = 0, iDyn = 0;
+    int maxLoc = 0, iDyn = 0, ixa=0,ixb=0,iya=0,iyb=0;
     bool goodTrace = false;
     vector<double> dynodeTrace, siliconTrace;
-    
+    int eventNum=0, iSi=0;    
+
     TFile *newFile = new TFile("newFile.root","RECREATE");
     TTree *newTree = new TTree("newTree","tree filled with traces and energies etc.");
   
+    newTree->Branch("eventNum", &eventNum);
     newTree->Branch("dynodeTrace", &dynodeTrace);
     newTree->Branch("dynodeEnergy", &dynodeEhigh);
     newTree->Branch("siEnergy", &siE);
@@ -70,8 +72,12 @@ void tracePlotterTPC(){
     newTree->Branch("xpos", &xposl);
     newTree->Branch("ypos", &yposl);
     newTree->Branch("iDyn", &iDyn);
+    newTree->Branch("ixa", &ixa);
+    newTree->Branch("ixb", &ixb);
+    newTree->Branch("iya", &iya);
+    newTree->Branch("iyb", &iyb);
+    newTree->Branch("iSi", &iSi);
 
-  int eventNum=0;
 std::vector<unsigned> *trace;
   while(singe.Next()){
     //cout<<"while Loop"<<endl;
@@ -80,19 +86,27 @@ std::vector<unsigned> *trace;
     double bgTDiff = *tdiff;
     */
 	iDyn = 0;
-	if (eventNum%10000==0) cout<<eventNum<<endl;
+	ixa = 0;
+	ixb = 0;
+	iya = 0;
+	iyb = 0;
+	iSi = 0;
+	
+	if (eventNum%50000==0) cout<<eventNum<<endl;
 //        if (eventNum==50000) break;
-	goodTrace = false;
-    for(auto itC = rd.begin(); itC!=rd.end();itC++){
+	goodTrace = false;      	
+	dynodeTrace.clear();
+	siliconTrace.clear(); 
+     for(auto itC = rd.begin(); itC!=rd.end();itC++){
 	trace = &(itC->trace);
 	double energy = itC->energy;
 	double time = itC->time;
 	std::string dtype = itC->subtype.Data();
 	std::string dgroup = itC->group.Data();
 	int channel = itC->chanNum;  //used to try and gate on channel number rather than group/subtype
-	dynodeTrace.clear();
-	siliconTrace.clear();  
-      	
+
+
+
 /*    if (dtype == "dynode_low" && false){
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
           dynTraceLow->Fill(it,trace.at(it));
@@ -111,40 +125,46 @@ std::vector<unsigned> *trace;
 	traceRatio->Fill(qdcShortL/(qdcShortL+qdcLongL));    
     }*/
       if (channel == 6){
+	iSi++;
       for (unsigned int it=0,itend = trace->size();it<itend;it++){
           siTrace->Fill(it,trace->at(it));
           siliconTrace.push_back(trace->at(it));
       }
       siTime = time;
 	  siE = energy;
+      siEnergy->Fill(siE);
      }
     else if (dtype == "anode_low" && dgroup == "xa"){
+      ixa++;
       /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
           xaTrace->Fill(it,trace.at(it));
       }*/
 	xal = energy;
       }
     else if (dtype == "anode_low" && dgroup == "xb"){
+	ixb++;
       /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
           xbTrace->Fill(it,trace.at(it));
       }*/
 	xbl = energy;
       }
     else if (dtype == "anode_low" && dgroup == "ya"){
+	iya++;
       /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
           yaTrace->Fill(it,trace.at(it));
       }*/
 	yal = energy;
       }
     else if (dtype == "anode_low" && dgroup == "yb"){
+	iyb++;
       /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
           ybTrace->Fill(it,trace.at(it));
       }*/
 	ybl = energy;
       }
-    else
- if(dtype == "dynode_high"){
+    else if(dtype == "dynode_high"){
        iDyn++;
+       if(iDyn==1){
 	for (unsigned int it=0,itend = trace->size();it<itend;it++){
            dynTraceHigh->Fill(it,trace->at(it));
            dynodeTrace.push_back(trace->at(it));
@@ -162,9 +182,12 @@ std::vector<unsigned> *trace;
         	traceRatio->Fill(qdcShortH/(qdcShortH+qdcLongH));    
                 goodTrace = true;
 		//cout << "Long: " << qdcLongH << ", ShortH: " << qdcShortH << endl;
-                newTree->Fill();
+                //newTree->Fill();
 	}
+       
+      dynEnergy->Fill(dynodeEhigh); //can be changed to low
        qdcRatio->Fill((qdcLongH+qdcShortH),qdcShortH/(qdcLongH+qdcShortH));  //for the H for high gain L for low gain plotting
+     }
     }
     /*else if (dtype == "anode_high" && dgroup == "xa"){
       for (unsigned int it=0,itend = trace.size();it<itend;it++){
@@ -191,10 +214,10 @@ std::vector<unsigned> *trace;
 	ybh = energy;
       } */
       //if(qdcLongH>0.5*qdcShortH && qdcLongH<2*qdcShortH) 
-      siEnergy->Fill(siE);
-      dynEnergy->Fill(dynodeEhigh); //can be changed to low
+
+
         
-  //   if(goodTrace){ newTree->Fill();}
+     //if(goodTrace){ newTree->Fill();}
        
 
     }
@@ -209,7 +232,7 @@ std::vector<unsigned> *trace;
         yposh = 25 * (xah + xbh) / (xah + xbh + yah + ybh);
 	positionHigh->Fill(xposh,yposh);
        }
-   if(xal > 0 && xbl > 0 && yal > 0 && ybl > 0 && qdcLongH>2*qdcShortH){
+   if(xal > 0 && xbl > 0 && yal > 0 && ybl > 0){
 	//xpos = 25 * ((xa + xb) - (ya +yb)) / (xa + xb + ya + yb);
 	//ypos = 25 * ((xa + yb) - (xb +ya)) / (xa + xb + ya + yb);
         xposl = 25 * (ybl + xal) / (xal + xbl + yal + ybl);
@@ -218,10 +241,10 @@ std::vector<unsigned> *trace;
 	//siEnergy->Fill(siE);
        }
    timeDiff->Fill(siTime - dynTime);
-
-   eventNum++;
-
   //if(goodTrace){ newTree->Fill();}
+   newTree->Fill();
+	eventNum++;
+
   }
 
 //  c2->cd();
@@ -233,6 +256,11 @@ std::vector<unsigned> *trace;
     newTree->Write();
 	qdcRatio->Write();
 	dynTraceHigh->Write();
+	positionLow->Write();
+ 
+ TCut XY = "ixa>0 && ixb>0 && iya>0 && iyb>0";
+ XY.Write();
+
 }
 
 //Function for calculating the QDC
