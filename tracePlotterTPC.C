@@ -16,6 +16,7 @@
 
 double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound);
 int maxCalculator(vector<double> trace);
+pair <int, int> boundsCalc(vector<double> trace, int maxPos);
 
 void tracePlotterTPC(){
   TFile *_file0 = TFile::Open("yso_vault04_DD.root");
@@ -55,6 +56,7 @@ void tracePlotterTPC(){
     double qdcShortL = 0.0, qdcLongL = 0.0;
     double qdcShortH = 0.0, qdcLongH = 0.0;
     int maxLoc = 0, iDyn = 0, ixa=0,ixb=0,iya=0,iyb=0;
+    pair<int,int> Bound;
     bool goodTrace = false;
     vector<double> dynodeTrace, siliconTrace;
     int eventNum=0, iSi=0;    
@@ -170,8 +172,9 @@ std::vector<unsigned> *trace;
            dynodeTrace.push_back(trace->at(it));
        }
         maxLoc = maxCalculator(dynodeTrace);
-        unsigned int lowBoundShort = maxLoc - 28;
-        unsigned int highBoundShort = maxLoc + 20;
+        Bound = boundsCalc(dynodeTrace, maxLoc);
+        unsigned int lowBoundShort = Bound.first;
+        unsigned int highBoundShort = Bound.second;
         unsigned int lowBoundLong = 1 + highBoundShort;
         unsigned int highBoundLong = 250;
         dynTime = time;
@@ -288,4 +291,15 @@ int maxCalculator(vector<double> trace){
 		    if(trace[i]>trace[mLoc]){mLoc = i;}
 	}
 	return mLoc;
+}
+
+//Function for calculating upper and lower bounds for short due to pulse height
+pair <int, int> boundsCalc(vector<double> trace, int maxPos){
+    double maxVal = trace[maxPos];
+    if(maxVal<600;){
+        return std::make_pair (maxPos-5,maxPos+10);
+    }
+    else{
+        return std::make_pair (maxPos-10, maxPos+15);
+    }
 }
