@@ -60,6 +60,7 @@ void tracePlotterTPC(){
     bool goodTrace = false;
     vector<double> dynodeTrace, siliconTrace;
     int eventNum=0, iSi=0;    
+    double traceMax =0.0;
 
     TFile *newFile = new TFile("newFile.root","RECREATE");
     TTree *newTree = new TTree("newTree","tree filled with traces and energies etc.");
@@ -79,6 +80,7 @@ void tracePlotterTPC(){
     newTree->Branch("iya", &iya);
     newTree->Branch("iyb", &iyb);
     newTree->Branch("iSi", &iSi);
+    newTree->Branch("tmax", &traceMax);
 
 std::vector<unsigned> *trace;
   while(singe.Next()){
@@ -173,6 +175,7 @@ std::vector<unsigned> *trace;
        }
         maxLoc = maxCalculator(dynodeTrace);
         Bound = boundsCalc(dynodeTrace, maxLoc);
+	traceMax = dynodeTrace[maxLoc];
         unsigned int lowBoundShort = Bound.first;
         unsigned int highBoundShort = Bound.second;
         unsigned int lowBoundLong = 1 + highBoundShort;
@@ -296,10 +299,11 @@ int maxCalculator(vector<double> trace){
 //Function for calculating upper and lower bounds for short due to pulse height
 pair <int, int> boundsCalc(vector<double> trace, int maxPos){
     double maxVal = trace[maxPos];
-    if(maxVal<600;){
+    return std::make_pair (maxPos-(maxVal/100+1),maxPos+(maxVal/50+1));
+    /*if(maxVal<600){
         return std::make_pair (maxPos-5,maxPos+10);
     }
     else{
         return std::make_pair (maxPos-10, maxPos+15);
-    }
+    }*/
 }
