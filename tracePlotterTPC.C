@@ -19,7 +19,7 @@ int maxCalculator(vector<double> trace);
 pair <int, int> boundsCalc(vector<double> trace, int maxPos);
 
 void tracePlotterTPC(){
-  TFile *_file0 = TFile::Open("yso_vault04_DD.root");
+  TFile *_file0 = TFile::Open("yso_vault05_bigEvent_DD.root");
   TTree *GS = (TTree*)_file0->Get("PixTree");
   TTreeReader singe;
   cout<<"readermade"<<endl;
@@ -80,6 +80,8 @@ void tracePlotterTPC(){
     newTree->Branch("iya", &iya);
     newTree->Branch("iyb", &iyb);
     newTree->Branch("iSi", &iSi);
+    newTree->Branch("siTime", &siTime);
+    newTree->Branch("dynTime", &dynTime);
     newTree->Branch("tmax", &traceMax);
 
 std::vector<unsigned> *trace;
@@ -89,18 +91,26 @@ std::vector<unsigned> *trace;
     std::string dtype = *type;
     double bgTDiff = *tdiff;
     */
+	//clearing the previous values from last event
 	iDyn = 0;
 	ixa = 0;
 	ixb = 0;
 	iya = 0;
 	iyb = 0;
 	iSi = 0;
+	qdcShortL = -999.; qdcLongL = -999;
+	qdcShortH = -999; qdcLongH = -999;
+	siE = -999;
+	dynodeEhigh = -999;
+	xposl = 0.0;
+	yposl = 0.0; 
 	
 	if (eventNum%50000==0) cout<<eventNum<<endl;
 //        if (eventNum==50000) break;
 	goodTrace = false;      	
 	dynodeTrace.clear();
-	siliconTrace.clear(); 
+	siliconTrace.clear();
+ 
      for(auto itC = rd.begin(); itC!=rd.end();itC++){
 	trace = &(itC->trace);
 	double energy = itC->energy;
@@ -130,6 +140,7 @@ std::vector<unsigned> *trace;
     }*/
       if (channel == 6){
 	iSi++;
+      //if(iSi==1){
       for (unsigned int it=0,itend = trace->size();it<itend;it++){
           siTrace->Fill(it,trace->at(it));
           siliconTrace.push_back(trace->at(it));
@@ -137,7 +148,8 @@ std::vector<unsigned> *trace;
       siTime = time;
 	  siE = energy;
       siEnergy->Fill(siE);
-     }
+      }
+      //}
     else if (dtype == "anode_low" && dgroup == "xa"){
       ixa++;
       /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
@@ -172,7 +184,7 @@ std::vector<unsigned> *trace;
 	for (unsigned int it=0,itend = trace->size();it<itend;it++){
            dynTraceHigh->Fill(it,trace->at(it));
            dynodeTrace.push_back(trace->at(it));
-       }
+        }
         maxLoc = maxCalculator(dynodeTrace);
         Bound = boundsCalc(dynodeTrace, maxLoc);
 	traceMax = dynodeTrace[maxLoc];
@@ -182,14 +194,14 @@ std::vector<unsigned> *trace;
         unsigned int highBoundLong = 250;
         dynTime = time;
         dynodeEhigh = energy;
-         if(dynodeTrace[maxLoc]<4090){
+         if(traceMax<4090){
             qdcShortH = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
         	qdcLongH = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
         	traceRatio->Fill(qdcShortH/(qdcShortH+qdcLongH));    
                 goodTrace = true;
 		//cout << "Long: " << qdcLongH << ", ShortH: " << qdcShortH << endl;
                 //newTree->Fill();
-	}
+	 }
        
       dynEnergy->Fill(dynodeEhigh); //can be changed to low
        qdcRatio->Fill((qdcLongH+qdcShortH),qdcShortH/(qdcLongH+qdcShortH));  //for the H for high gain L for low gain plotting
