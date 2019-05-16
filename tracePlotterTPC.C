@@ -17,6 +17,7 @@
 double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound);
 int maxCalculator(vector<double> trace);
 pair <int, int> boundsCalc(vector<double> trace, int maxPos);
+pair <double, double> baselineCalc(vector<double> trace);
 
 void tracePlotterTPC(){
   TFile *_file0 = TFile::Open("yso_vault05_bigEvent_DD.root");
@@ -60,7 +61,7 @@ void tracePlotterTPC(){
     bool goodTrace = false;
     vector<double> dynodeTrace, siliconTrace;
     int eventNum=0, iSi=0;    
-    double traceMax =0.0;
+    double traceMax =0.0, stddev = 0.0;
 
     TFile *newFile = new TFile("newFile.root","RECREATE");
     TTree *newTree = new TTree("newTree","tree filled with traces and energies etc.");
@@ -83,6 +84,7 @@ void tracePlotterTPC(){
     newTree->Branch("siTime", &siTime);
     newTree->Branch("dynTime", &dynTime);
     newTree->Branch("tmax", &traceMax);
+    newTree->Brance("stddev", &stddev)
 
 std::vector<unsigned> *trace;
   while(singe.Next()){
@@ -103,7 +105,9 @@ std::vector<unsigned> *trace;
 	siE = -999;
 	dynodeEhigh = -999;
 	xposl = 0.0;
-	yposl = 0.0; 
+	yposl = 0.0;
+    xal=0.0; xbl=0.0; yal=0.0; ybl=0.0;
+    stddev = 0.0;
 	
 	if (eventNum%50000==0) cout<<eventNum<<endl;
 //        if (eventNum==50000) break;
@@ -188,6 +192,7 @@ std::vector<unsigned> *trace;
         maxLoc = maxCalculator(dynodeTrace);
         Bound = boundsCalc(dynodeTrace, maxLoc);
 	traceMax = dynodeTrace[maxLoc];
+        stddev = baselineCalc(dynodeTrace).second;
         unsigned int lowBoundShort = Bound.first;
         unsigned int highBoundShort = Bound.second;
         unsigned int lowBoundLong = 1 + highBoundShort;
@@ -284,12 +289,8 @@ std::vector<unsigned> *trace;
 //Function for calculating the QDC
 
 double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound){
-    //first subtract baseline
-    double baseSum = 0.;
-    for(int j=0;j<20;j++){
-	baseSum += trace[j];
-    }
-    double  baseline = baseSum/20.;
+
+    double  baseline = baselineCalc(trace).first;
    //calculate integral after baseline
     double integral = 0.0;
     for (int i=lowBound; i<highBound;i++){
@@ -318,4 +319,22 @@ pair <int, int> boundsCalc(vector<double> trace, int maxPos){
     else{
         return std::make_pair (maxPos-10, maxPos+15);
     }*/
+}
+
+pair <double, double> baselineCalc(vector<double> trace){
+    //calculating the baseline
+    double baseSum = 0.;
+    for(int j=0;j<20;j++){
+        baseSum += trace[j];
+    }
+    double  baseline = baseSum/20.;
+    
+    //calculating the standard dev
+    double stddev = 0.0;
+    for(int j=0;j<20;j++){
+        stddev += pow(j-baseline,2);
+    }
+    stddev = sqrt(stddev/20);
+    
+    return std::make_pair (baseline, stddev);
 }
