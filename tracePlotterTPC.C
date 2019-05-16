@@ -56,12 +56,12 @@ void tracePlotterTPC(){
     double dynodeElow = 0., dynodeEhigh=0., siE = 0.;
     double qdcShortL = 0.0, qdcLongL = 0.0;
     double qdcShortH = 0.0, qdcLongH = 0.0;
-    int maxLoc = 0, iDyn = 0, ixa=0,ixb=0,iya=0,iyb=0;
+    int maxLoc = 0, iDyn = 0, ixa=0,ixb=0,iya=0,iyb=0, minimumLoc=0;
     pair<int,int> Bound;
     bool goodTrace = false;
     vector<double> dynodeTrace, siliconTrace;
     int eventNum=0, iSi=0, undershoot=0;    
-    double traceMax =0.0, stddev = 0.0;
+    double traceMax =0.0, stddev = 0.0, traceMin = 0.0;
 
     TFile *newFile = new TFile("newFile.root","RECREATE");
     TTree *newTree = new TTree("newTree","tree filled with traces and energies etc.");
@@ -84,6 +84,7 @@ void tracePlotterTPC(){
     newTree->Branch("siTime", &siTime);
     newTree->Branch("dynTime", &dynTime);
     newTree->Branch("tmax", &traceMax);
+    newTree->Branch("tmin", &traceMin);
     newTree->Branch("stddev", &stddev);
     newTree->Branch("undershootcount", &undershoot);
 
@@ -108,7 +109,7 @@ std::vector<unsigned> *trace;
 	xposl = 0.0;
 	yposl = 0.0;
     xal=0.0; xbl=0.0; yal=0.0; ybl=0.0;
-    stddev = 0.0;
+    stddev = 0.0; traceMax = 0.0; traceMin = 0.0;
 	
 	if (eventNum%50000==0) cout<<eventNum<<endl;
 //        if (eventNum==50000) break;
@@ -191,10 +192,12 @@ std::vector<unsigned> *trace;
            dynodeTrace.push_back(trace->at(it));
         }
         maxLoc = maxCalculator(dynodeTrace).first;
+	minimumLoc = maxCalculator(dynodeTrace).second;
         Bound = boundsCalc(dynodeTrace, maxLoc);
 	traceMax = dynodeTrace[maxLoc];
+	traceMin = dynodeTrace[minimumLoc];
         stddev = baselineCalc(dynodeTrace).second;
-	if(maxCalculator(dynodeTrace).second<baselineCalc(dynodeTrace).first-6*stddev){undershoot++;}
+	if(traceMin<baselineCalc(dynodeTrace).first-6*stddev){undershoot++;}
         unsigned int lowBoundShort = Bound.first;
         unsigned int highBoundShort = Bound.second;
         unsigned int lowBoundLong = 1 + highBoundShort;
@@ -336,7 +339,7 @@ pair <double, double> baselineCalc(vector<double> trace){
     //calculating the standard dev
     double stddev = 0.0;
     for(int j=0;j<20;j++){
-        stddev += pow(j-baseline,2);
+        stddev += pow(trace[j]-baseline,2);
     }
     stddev = sqrt(stddev/20);
     
