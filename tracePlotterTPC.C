@@ -15,7 +15,7 @@
 #include <ProcessorRootStruc.hpp>
 
 double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int highBound);
-int maxCalculator(vector<double> trace);
+pair <int, int> maxCalculator(vector<double> trace);
 pair <int, int> boundsCalc(vector<double> trace, int maxPos);
 pair <double, double> baselineCalc(vector<double> trace);
 
@@ -60,7 +60,7 @@ void tracePlotterTPC(){
     pair<int,int> Bound;
     bool goodTrace = false;
     vector<double> dynodeTrace, siliconTrace;
-    int eventNum=0, iSi=0;    
+    int eventNum=0, iSi=0, undershoot=0;    
     double traceMax =0.0, stddev = 0.0;
 
     TFile *newFile = new TFile("newFile.root","RECREATE");
@@ -84,7 +84,8 @@ void tracePlotterTPC(){
     newTree->Branch("siTime", &siTime);
     newTree->Branch("dynTime", &dynTime);
     newTree->Branch("tmax", &traceMax);
-    newTree->Brance("stddev", &stddev)
+    newTree->Branch("stddev", &stddev);
+    newTree->Branch("undershootcount", &undershoot);
 
 std::vector<unsigned> *trace;
   while(singe.Next()){
@@ -99,7 +100,7 @@ std::vector<unsigned> *trace;
 	ixb = 0;
 	iya = 0;
 	iyb = 0;
-	iSi = 0;
+	iSi = 0; undershoot=0;
 	qdcShortL = -999.; qdcLongL = -999;
 	qdcShortH = -999; qdcLongH = -999;
 	siE = -999;
@@ -189,10 +190,11 @@ std::vector<unsigned> *trace;
            dynTraceHigh->Fill(it,trace->at(it));
            dynodeTrace.push_back(trace->at(it));
         }
-        maxLoc = maxCalculator(dynodeTrace);
+        maxLoc = maxCalculator(dynodeTrace).first;
         Bound = boundsCalc(dynodeTrace, maxLoc);
 	traceMax = dynodeTrace[maxLoc];
         stddev = baselineCalc(dynodeTrace).second;
+	if(maxCalculator(dynodeTrace).second<baselineCalc(dynodeTrace).first-6*stddev){undershoot++;}
         unsigned int lowBoundShort = Bound.first;
         unsigned int highBoundShort = Bound.second;
         unsigned int lowBoundLong = 1 + highBoundShort;
@@ -301,12 +303,14 @@ double QDCcalculator(vector<double> trace, unsigned int lowBound, unsigned int h
 
 //Function for calculating the location of the maximum value in a trace
 
-int maxCalculator(vector<double> trace){
+pair<int, int> maxCalculator(vector<double> trace){
 	int mLoc = 0;
+	int minLoc=0;
 	for(int i=1;i<trace.size();i++){
 		    if(trace[i]>trace[mLoc]){mLoc = i;}
+		if(trace[i]<trace[minLoc]){minLoc = i;}
 	}
-	return mLoc;
+	return std::make_pair (mLoc,minLoc);
 }
 
 //Function for calculating upper and lower bounds for short due to pulse height
