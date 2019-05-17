@@ -33,20 +33,20 @@ void tracePlotterTPC(){
 //  TCanvas* c2 = new TCanvas("c2","c2",1200,600);
 //  c1->SetLogz();
 //  c2->SetLogz();
-  TH2D* dynTraceLow=new TH2D("dynTraceLow","dynTraces Low Gain",250.,0.,250.,5000,0.,5000.);
+  //TH2D* dynTraceLow=new TH2D("dynTraceLow","dynTraces Low Gain",250.,0.,250.,5000,0.,5000.);
   TH2D* dynTraceHigh=new TH2D("dynTraceHigh","dynTraces High Gain",250.,0.,250.,5000,0.,5000.);
   /*TH2D* xaTrace=new TH2D("xaTrace","xaTraces",250.,0.,250.,5000,0.,5000.);
   TH2D* xbTrace=new TH2D("xbTrace","xbTraces",250.,0.,250.,5000,0.,5000.);
   TH2D* yaTrace=new TH2D("yaTrace","yaTraces",250.,0.,250.,5000,0.,5000.);
   TH2D* ybTrace=new TH2D("ybTrace","ybTraces",250.,0.,250.,5000,0.,5000.); */
   TH2D* positionLow=new TH2D("positionLow","Positions Low Gain",250.,0.,25.,250.,0.,25.);
-  TH2D* positionHigh=new TH2D("positionHigh","Positions High Gain",250.,0.,25.,250.,0.,25.);
-  TH2D* siTrace=new TH2D("siTrace","siTraces",2500.,0.,2500.,2500,0.,2500.);
-  TH1D* timeDiff=new TH1D("timeDiff","timeDifferences",1000.,-500.,500.);
-  TH1D* siEnergy=new TH1D("siEnergy","siEnergies",1800.,0.,18000.);
-  TH1D* dynEnergy=new TH1D("dynEnergy","dynEnergies",4000.,0.,40000.);
+  //TH2D* positionHigh=new TH2D("positionHigh","Positions High Gain",250.,0.,25.,250.,0.,25.);
+  //TH2D* siTrace=new TH2D("siTrace","siTraces",2500.,0.,2500.,2500,0.,2500.);
+  //TH1D* timeDiff=new TH1D("timeDiff","timeDifferences",1000.,-500.,500.);
+  //TH1D* siEnergy=new TH1D("siEnergy","siEnergies",1800.,0.,18000.);
+  //TH1D* dynEnergy=new TH1D("dynEnergy","dynEnergies",4000.,0.,40000.);
   TH2D* qdcRatio=new TH2D("qdcRatio","Short/Total vs Total",1000.,0.,10000.,100.,0.,1.);
-  TH1D* traceRatio=new TH1D("traceRatio","trace ratio",100.,0.,1.);
+  //TH1D* traceRatio=new TH1D("traceRatio","trace ratio",100.,0.,1.);
     
     double xal=0.0, xbl=0.0, yal=0.0, ybl=0.0;
     double xposl=0.0, yposl=0.0;  //low gain
@@ -59,7 +59,7 @@ void tracePlotterTPC(){
     int maxLoc = 0, iDyn = 0, ixa=0,ixb=0,iya=0,iyb=0;
     pair<int,int> Bound;
     bool goodTrace = false;
-    vector<double> dynodeTrace, siliconTrace;
+    vector<double> dynodeTrace, siliconTrace, xaTrace, xbTrace, yaTrace, ybTrace, anodeSum;
     int eventNum=0, iSi=0, undershoot=0;    
     double traceMax =0.0, stddev = 0.0;
 
@@ -86,6 +86,11 @@ void tracePlotterTPC(){
     newTree->Branch("tmax", &traceMax);
     newTree->Branch("stddev", &stddev);
     newTree->Branch("undershootcount", &undershoot);
+    newTree->Branch("xaTrace", &xaTrace)
+    newTree->Branch("xbTrace", &xbTrace)
+    newTree->Branch("yaTrace", &yaTrace)
+    newTree->Branch("ybTrace", &ybTrace)
+    newTree->Branch("anodeSum", &anodeSum)
 
 std::vector<unsigned> *trace;
   while(singe.Next()){
@@ -115,6 +120,11 @@ std::vector<unsigned> *trace;
 	goodTrace = false;      	
 	dynodeTrace.clear();
 	siliconTrace.clear();
+    xaTrace.clear();
+    xbTrace.clear();
+    yaTrace.clear();
+    ybTrace.clear();
+    anodeSum.clear();
  
      for(auto itC = rd.begin(); itC!=rd.end();itC++){
 	trace = &(itC->trace);
@@ -157,30 +167,30 @@ std::vector<unsigned> *trace;
       //}
     else if (dtype == "anode_low" && dgroup == "xa"){
       ixa++;
-      /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
-          xaTrace->Fill(it,trace.at(it));
-      }*/
+      for (unsigned int it=0,itend = trace.size();it<itend;it++){
+          xaTrace.push_back(trace.at(it));
+      }
 	xal = energy;
       }
     else if (dtype == "anode_low" && dgroup == "xb"){
 	ixb++;
-      /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
-          xbTrace->Fill(it,trace.at(it));
-      }*/
+      for (unsigned int it=0,itend = trace.size();it<itend;it++){
+          xbTrace.push_back(it,trace.at(it));
+      }
 	xbl = energy;
       }
     else if (dtype == "anode_low" && dgroup == "ya"){
 	iya++;
-      /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
-          yaTrace->Fill(it,trace.at(it));
-      }*/
+      for (unsigned int it=0,itend = trace.size();it<itend;it++){
+          yaTrace.push_back(it,trace.at(it));
+      }
 	yal = energy;
       }
     else if (dtype == "anode_low" && dgroup == "yb"){
 	iyb++;
-      /*for (unsigned int it=0,itend = trace.size();it<itend;it++){
-          ybTrace->Fill(it,trace.at(it));
-      }*/
+      for (unsigned int it=0,itend = trace.size();it<itend;it++){
+          ybTrace.push_back(it,trace.at(it));
+      }
 	ybl = energy;
       }
     else if(dtype == "dynode_high"){
@@ -241,14 +251,18 @@ std::vector<unsigned> *trace;
       //if(qdcLongH>0.5*qdcShortH && qdcLongH<2*qdcShortH) 
 
 
-        
-     //if(goodTrace){ newTree->Fill();}
-       
 
     }
 
       //Section for filling plots
-      
+    if(ixa>0 && ixb>0 && iya>0 && iyb>0){
+        for(int i=0;i<250;i++){
+            anodeSum.push_back(xaTrace[i]);
+            anodeSum[i] += xbTrace[i];
+            anodeSum[i] += yaTrace[i];
+            anodeSum[i] += ybTrace[i];
+        }
+    }
      
    if(xah > 0 && xbh > 0 && yah > 0 && ybh > 0){
 	//xpos = 25 * ((xa + xb) - (ya +yb)) / (xa + xb + ya + yb);
