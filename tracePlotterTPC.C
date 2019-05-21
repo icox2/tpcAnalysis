@@ -20,7 +20,7 @@ pair <int, int> boundsCalc(vector<double> trace, int maxPos);
 pair <double, double> baselineCalc(vector<double> trace);
 
 void tracePlotterTPC(){
-  TFile *_file0 = TFile::Open("yso_vault04_DD.root");
+  TFile *_file0 = TFile::Open("yso_vault05_DD.root");
   TTree *GS = (TTree*)_file0->Get("PixTree");
   TTreeReader singe;
   cout<<"readermade"<<endl;
@@ -52,7 +52,8 @@ void tracePlotterTPC(){
     double xposl=0.0, yposl=0.0;  //low gain
     double xah=0.0, xbh=0., yah=0., ybh=0.;
     double xposh=0., yposh=0.;  //high gain
-    double siTime=0., dynTime=0.;
+    double dynTime=0.;
+    double siTime = 0.0;
     double dynodeElow = 0., dynodeEhigh=0., siE = 0.;
     double qdcShortL = 0.0, qdcLongL = 0.0;
     double qdcShortH = 0.0, qdcLongH = 0.0;
@@ -126,6 +127,7 @@ std::vector<unsigned> *trace;
     yaTrace.clear();
     ybTrace.clear();
     anodeSum.clear();
+    siTime=0.0;
  
      for(auto itC = rd.begin(); itC!=rd.end();itC++){
 	trace = &(itC->trace);
@@ -201,20 +203,20 @@ std::vector<unsigned> *trace;
            dynTraceHigh->Fill(it,trace->at(it));
            dynodeTrace.push_back(trace->at(it));
         }
-        /*maxLoc = maxCalculator(dynodeTrace).first;
+        maxLoc = maxCalculator(dynodeTrace).first;
 	minimumLoc = maxCalculator(dynodeTrace).second;
         Bound = boundsCalc(dynodeTrace, maxLoc);
 	traceMax = dynodeTrace[maxLoc];
 	traceMin = dynodeTrace[minimumLoc];
         stddev = baselineCalc(dynodeTrace).second;
 	if(traceMin<baselineCalc(dynodeTrace).first-6*stddev){undershoot++;}
-        unsigned int lowBoundShort = Bound.first;
+        /*unsigned int lowBoundShort = Bound.first;
         unsigned int highBoundShort = Bound.second;
         unsigned int lowBoundLong = 1 + highBoundShort;
-        unsigned int highBoundLong = 250;
+        unsigned int highBoundLong = 250;*/
         dynTime = time;
         dynodeEhigh = energy;
-         if(traceMax<4090){
+        /* if(traceMax<4090){
             qdcShortH = QDCcalculator(dynodeTrace, lowBoundShort, highBoundShort);
         	qdcLongH = QDCcalculator(dynodeTrace, lowBoundLong, highBoundLong);
         	//traceRatio->Fill(qdcShortH/(qdcShortH+qdcLongH));    
@@ -259,7 +261,9 @@ std::vector<unsigned> *trace;
 
       //Section for filling plots
     if(ixa>0 && ixb>0 && iya>0 && iyb>0){
-        for(int i=0;i<250;i++){
+        qdcShortH = 0.0;
+	qdcLongH = 0.0;
+	for(int i=0;i<250;i++){
             anodeSum.push_back(xaTrace[i]);
             anodeSum[i] += xbTrace[i];
             anodeSum[i] += yaTrace[i];
@@ -268,10 +272,10 @@ std::vector<unsigned> *trace;
         maxLoc = maxCalculator(anodeSum).first;
 	minimumLoc = maxCalculator(anodeSum).second;
         Bound = boundsCalc(anodeSum, maxLoc);
-	traceMax = dynodeTrace[maxLoc];
-	traceMin = dynodeTrace[minimumLoc];
+	//traceMax = dynodeTrace[maxLoc];
+	//traceMin = dynodeTrace[minimumLoc];
         stddev = baselineCalc(anodeSum).second;
-	if(traceMin<baselineCalc(anodeSum).first-6*stddev){undershoot++;}
+	//if(traceMin<baselineCalc(anodeSum).first-6*stddev){undershoot++;}
         unsigned int lowBoundShort = Bound.first;
         unsigned int highBoundShort = Bound.second;
         unsigned int lowBoundLong = 1 + highBoundShort;
@@ -346,7 +350,7 @@ pair<int, int> maxCalculator(vector<double> trace){
 //Function for calculating upper and lower bounds for short due to pulse height
 pair <int, int> boundsCalc(vector<double> trace, int maxPos){
     double maxVal = trace[maxPos];
-    return std::make_pair (maxPos-(maxVal/100+1),maxPos+(maxVal/50+1));
+    return std::make_pair (maxPos-(maxVal/150+1),maxPos+(maxVal/125+1));
     /*if(maxVal<600){
         return std::make_pair (maxPos-5,maxPos+10);
     }
