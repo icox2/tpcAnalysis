@@ -19,7 +19,7 @@ pair <int, int> boundsCalc(vector<unsigned int> trace, int maxPos);
 pair <double, double> baselineCalc(vector<unsigned int> trace);
 
 void tracePlotterTPC(){
-  TFile *_file0 = TFile::Open("sample_traces_laser01_DD.root");
+  TFile *_file0 = TFile::Open("yso_vault05_DD.root");
   TTree *GS = (TTree*)_file0->Get("PixTree");
   TTreeReader singe;
   cout<<"readermade"<<endl;
@@ -53,6 +53,7 @@ void tracePlotterTPC(){
   double qdcS[4];
   double qdcL[4];
   double qdcSum[4];
+  double scale = 1.;
 	
   TFile *newFile = new TFile("newFile.root","RECREATE");
   TTree *newTree = new TTree("newTree","tree filled with traces and energies etc.");
@@ -111,7 +112,7 @@ std::vector<unsigned> *trace;
     stddev = 0.0; traceMax = 0.0; traceMin = 0.0;
 	qdcS[0] = -999.; qdcS[1] = -999.; qdcS[2] = -999.; qdcS[3] = -999.;
 	qdcL[0] = -999.; qdcL[1] = -999.; qdcL[2] = -999.; qdcL[3] = -999.;
-	for(int i=0;i<4;i++){anodeRatio[i]=-999.;}
+	for(int i=0;i<4;i++){anodeRatio[i]=-999.;scale=1.;}
 	
 	if (eventNum%50000==0) cout<<eventNum<<endl;
 
@@ -249,9 +250,11 @@ std::vector<unsigned> *trace;
         qdcShortA = 0.0;
 	qdcLongA = 0.0;
 	for(int i=0;i<4;i++){
+	  scale = qdcS[0]/qdcS[i];
 	  qdcSum[i] = qdcS[i] + qdcL[i];
-	  qdcShortA += qdcS[i];
-	  qdcLongA += qdcL[i];
+	  qdcShortA += scale*qdcS[i];
+	  scale = qdcL[0]/qdcL[i];
+	  qdcLongA += scale*qdcL[i];
 	  anodeRatio[i] = qdcS[i]/qdcSum[i];
 	}
    }
