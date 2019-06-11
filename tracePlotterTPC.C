@@ -67,8 +67,10 @@ void tracePlotterTPC(){
   newTree->Branch("longQDC",&qdcLongA);
   newTree->Branch("shortQDCdyn", &qdcShortH);
   newTree->Branch("longQDCdyn",&qdcLongH);
-  newTree->Branch("xpos", &xposl);
-  newTree->Branch("ypos", &yposl);
+  newTree->Branch("xposl", &xposl);
+  newTree->Branch("yposl", &yposl);
+  newTree->Branch("xposh", &xposh);
+  newTree->Branch("yposh", &yposh);
   newTree->Branch("iDyn", &iDyn);
   newTree->Branch("ixa", &ixa);
   newTree->Branch("ixb", &ixb);
@@ -83,10 +85,10 @@ void tracePlotterTPC(){
   newTree->Branch("anodeRatio", anodeRatio);
   newTree->Branch("qdcSum", qdcSum);
   newTree->Branch("undershootcount", &undershoot);
-//    newTree->Branch("xaTrace", &xaTrace);
-//    newTree->Branch("xbTrace", &xbTrace);
-//    newTree->Branch("yaTrace", &yaTrace);
-//    newTree->Branch("ybTrace", &ybTrace);
+  newTree->Branch("xaTrace", &xaTrace);
+  newTree->Branch("xbTrace", &xbTrace);
+  newTree->Branch("yaTrace", &yaTrace);
+  newTree->Branch("ybTrace", &ybTrace);
 
 std::vector<unsigned> *trace;
   while(singe.Next()){
@@ -210,7 +212,7 @@ std::vector<unsigned> *trace;
         unsigned int highBoundShort = Bound.second;
         unsigned int lowBoundLong = 1 + highBoundShort;
         unsigned int highBoundLong = 250;
-        if(lowBoundLong>highBoundLong){cout<<"Broken Bounds"<<endl; continue;}
+        if(lowBoundLong>highBoundLong){/*cout<<"Broken Bounds"<<endl;*/ continue;}
 	dynTime = time;
         dynodeEhigh = energy;
 	dynEnergy->Fill(energy);
@@ -265,11 +267,11 @@ std::vector<unsigned> *trace;
       timeDiff->Fill(siTime-dynTime,siE);
     }
     
-   if(xah > 0 && xbh > 0 && yah > 0 && ybh > 0){
+   if(qdcS[0]+qdcL[0] > 0 && qdcS[1]+qdcL[1] > 0 && qdcS[2]+qdcL[2] > 0 && qdcS[3]+qdcL[3] > 0){
 	//xpos = 25 * ((xa + xb) - (ya +yb)) / (xa + xb + ya + yb);
 	//ypos = 25 * ((xa + yb) - (xb +ya)) / (xa + xb + ya + yb);
-        xposh = 25 * (ybh + xah) / (xah + xbh + yah + ybh);
-        yposh = 25 * (xah + xbh) / (xah + xbh + yah + ybh);
+        xposh = 25 * (qdcS[3]+qdcL[3] + qdcS[0]+qdcL[0]) / (qdcS[0]+qdcL[0] + qdcS[1]+qdcL[1] + qdcS[2]+qdcL[2] + qdcS[3]+qdcL[3]);
+        yposh = 25 * (qdcS[0]+qdcL[0] + qdcS[1]+qdcL[1]) / (qdcS[0]+qdcL[0] + qdcS[1]+qdcL[1] + qdcS[2]+qdcL[2] + qdcS[3]+qdcL[3]);
        }
    if(xal > 0 && xbl > 0 && yal > 0 && ybl > 0){
 	//xpos = 25 * ((xa + xb) - (ya +yb)) / (xa + xb + ya + yb);
@@ -308,7 +310,7 @@ double QDCcalculator(vector<unsigned int> trace, unsigned int lowBound, unsigned
 //Function for calculating upper and lower bounds for short due to pulse height
 pair <int, int> boundsCalc(vector<unsigned int> trace, int maxPos){
     double maxVal = trace[maxPos];
-    return std::make_pair (maxPos-15,maxPos+15);
+    return std::make_pair (maxPos-30,maxPos+30);
 }
 
 pair <double, double> baselineCalc(vector<unsigned int> trace){
