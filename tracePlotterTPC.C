@@ -41,7 +41,8 @@ void tracePlotterTPC(){
   double dynTime=0.;
   double siTime = 0.0;
   double dynodeElow = 0., dynodeEhigh=0., siE = 0.;
-  double qdcShortA = 0.0, qdcLongA = 0.0;
+  double qdcShortAl = 0.0, qdcLongAl = 0.0;
+  double qdcShortAh = 0.0, qdcLongAh = 0.0;
   double qdcShortH = 0.0, qdcLongH = 0.0;
   double anodeRatio[4];
   int maxLoc = 0, iDyn = 0, ixa=0,ixb=0,iya=0,iyb=0, minimumLoc=0;
@@ -53,6 +54,7 @@ void tracePlotterTPC(){
   double traceMax =0.0, stddev = 0.0, traceMin = 0.0;
   double qdcS[8];//first 4 are low gain, second 4 are high gain
   double qdcL[8];
+  unsigned int tmax[8];
   double qdcSum[4];
   double scale = 1.;
 	
@@ -64,8 +66,10 @@ void tracePlotterTPC(){
   newTree->Branch("dynodeEnergy", &dynodeEhigh);
   newTree->Branch("siEnergy", &siE);
   newTree->Branch("siTrace", &siliconTrace);
-  newTree->Branch("shortQDC", &qdcShortA);
-  newTree->Branch("longQDC",&qdcLongA);
+  newTree->Branch("shortQDCl", &qdcShortAl);
+  newTree->Branch("longQDCl",&qdcLongAl);
+  newTree->Branch("shortQDCh", &qdcShortAh);
+  newTree->Branch("longQDCh",&qdcLongAh);
   newTree->Branch("shortQDCdyn", &qdcShortH);
   newTree->Branch("longQDCdyn",&qdcLongH);
   newTree->Branch("xposl", &xposl);
@@ -105,7 +109,7 @@ std::vector<unsigned> *trace;
 	iya = 0;
 	iyb = 0;
 	iSi = 0; undershoot=0;
-	qdcShortA = -999.; qdcLongA = -999.;
+	qdcShortAl = -999.; qdcLongAl = -999.;
 	qdcShortH = -999.; qdcLongH = -999.;
 	siE = -999.;
 	dynodeEhigh = -999.;
@@ -120,6 +124,8 @@ std::vector<unsigned> *trace;
 		qdcL[2*i] = -999.;
 		qdcS[2*i+1] = -999.;
 		qdcL[2*i+1] = -999.;
+		tmax[2*i]=0;
+		tmax[2*i+1]=0;
 	}
 	
 	if (eventNum%50000==0) cout<<eventNum<<endl;
@@ -171,8 +177,9 @@ std::vector<unsigned> *trace;
       xaTracel = *trace;
       xal = energy;
       maxLoc = std::distance(xaTracel.begin(),std::max_element(xaTracel.begin(),xaTracel.end()));
+      tmax[0] = *std::max_element(xaTracel.begin(),xaTracel.end());
       Bound = boundsCalc(xaTracel, maxLoc);
-      if(maxLoc>550) continue;
+      if(maxLoc>450) continue;
       qdcS[0] = QDCcalculator(xaTracel, Bound.first, Bound.second);
       qdcL[0] = QDCcalculator(xaTracel, Bound.second+1, 500);
       }
@@ -181,8 +188,9 @@ std::vector<unsigned> *trace;
       xbTracel = *trace;
       xbl = energy;
       maxLoc = std::distance(xbTracel.begin(),std::max_element(xbTracel.begin(),xbTracel.end()));
+      tmax[1] = *std::max_element(xbTracel.begin(),xbTracel.end());
       Bound = boundsCalc(xbTracel, maxLoc);
-      if(maxLoc>550) continue;
+      if(maxLoc>450) continue;
       qdcS[1] = QDCcalculator(xbTracel, Bound.first, Bound.second);
       qdcL[1] = QDCcalculator(xbTracel, Bound.second+1, 500);
       }
@@ -191,8 +199,9 @@ std::vector<unsigned> *trace;
 	yaTracel = *trace;
 	yal = energy;
 	maxLoc = std::distance(yaTracel.begin(),std::max_element(yaTracel.begin(),yaTracel.end()));
+      tmax[2] = *std::max_element(yaTracel.begin(),yaTracel.end());
       Bound = boundsCalc(yaTracel, maxLoc);
-      if(maxLoc>550) continue;
+      if(maxLoc>450) continue;
       qdcS[2] = QDCcalculator(yaTracel, Bound.first, Bound.second);
       qdcL[2] = QDCcalculator(yaTracel, Bound.second+1, 500); 
       }
@@ -201,8 +210,9 @@ std::vector<unsigned> *trace;
 	ybTracel = *trace;
 	ybl = energy;
       maxLoc = std::distance(ybTracel.begin(),std::max_element(ybTracel.begin(),ybTracel.end()));
+      tmax[3] = *std::max_element(ybTracel.begin(),ybTracel.end());
       Bound = boundsCalc(ybTracel, maxLoc);
-      if(maxLoc>550) continue;
+      if(maxLoc>450) continue;
       qdcS[3] = QDCcalculator(ybTracel, Bound.first, Bound.second);
       qdcL[3] = QDCcalculator(ybTracel, Bound.second+1, 500);
       }
@@ -239,8 +249,9 @@ std::vector<unsigned> *trace;
 	xaTraceh = *trace;      
 	xah = energy;
       maxLoc = std::distance(xaTraceh.begin(),std::max_element(xaTraceh.begin(),xaTraceh.end()));
+      tmax[4] = *std::max_element(xaTraceh.begin(),xaTraceh.end());
       Bound = boundsCalc(xaTraceh, maxLoc);
-      if(maxLoc>550) continue;
+      if(maxLoc>450) continue;
       qdcS[4] = QDCcalculator(xaTraceh, Bound.first, Bound.second);
       qdcL[4] = QDCcalculator(xaTraceh, Bound.second+1, 500);
       }
@@ -248,8 +259,9 @@ std::vector<unsigned> *trace;
       	xbTraceh = *trace;
 	xbh = energy;
       maxLoc = std::distance(xbTraceh.begin(),std::max_element(xbTraceh.begin(),xbTraceh.end()));
+      tmax[5] = *std::max_element(xbTraceh.begin(),xbTraceh.end());
       Bound = boundsCalc(xbTraceh, maxLoc);
-      if(maxLoc>550) continue;
+      if(maxLoc>450) continue;
       qdcS[5] = QDCcalculator(xbTraceh, Bound.first, Bound.second);
       qdcL[5] = QDCcalculator(xbTraceh, Bound.second+1, 500);
       }
@@ -257,8 +269,9 @@ std::vector<unsigned> *trace;
 	yaTraceh = *trace;      
 	yah = energy;
       maxLoc = std::distance(yaTraceh.begin(),std::max_element(yaTraceh.begin(),yaTraceh.end()));
+      tmax[6] = *std::max_element(yaTraceh.begin(),yaTraceh.end());
       Bound = boundsCalc(yaTraceh, maxLoc);
-      if(maxLoc>550) continue;
+      if(maxLoc>450) continue;
       qdcS[6] = QDCcalculator(yaTraceh, Bound.first, Bound.second);
       qdcL[6] = QDCcalculator(yaTraceh, Bound.second+1, 500);
       }
@@ -266,8 +279,9 @@ std::vector<unsigned> *trace;
      	ybTraceh = *trace;
 	ybh = energy;
       maxLoc = std::distance(ybTraceh.begin(),std::max_element(ybTraceh.begin(),ybTraceh.end()));
+      tmax[7] = *std::max_element(ybTraceh.begin(),ybTraceh.end());
       Bound = boundsCalc(ybTraceh, maxLoc);
-      if(maxLoc>550) continue;
+      if(maxLoc>450) continue;
       qdcS[7] = QDCcalculator(ybTraceh, Bound.first, Bound.second);
       qdcL[7] = QDCcalculator(ybTraceh, Bound.second+1, 500);
       } 
@@ -277,15 +291,21 @@ std::vector<unsigned> *trace;
 
       //Section for filling plots
     if(ixa>0 && ixb>0 && iya>0 && iyb>0){
-        qdcShortA = 0.0;
-	qdcLongA = 0.0;
+        qdcShortAl = 0.0;
+	qdcLongAl = 0.0;
+        qdcShortAh = 0.0;
+	qdcLongAh = 0.0;
 	for(int i=0;i<4;i++){
 	  scale = qdcS[0]/qdcS[i];
 	  qdcSum[i] = qdcS[i] + qdcL[i];
-	  qdcShortA += scale*qdcS[i];
+	  qdcShortAl += scale*qdcS[i];
 	  scale = qdcL[0]/qdcL[i];
-	  qdcLongA += scale*qdcL[i];
+	  qdcLongAl += scale*qdcL[i];
 	  anodeRatio[i] = qdcS[i]/qdcSum[i];
+	  scale = qdcS[4]/qdcS[i+4];
+	  qdcShortAh += scale*qdcS[i+4];
+	  scale = qdcL[4]/qdcL[i+4];
+	  qdcLongAh += scale*qdcL[i+4];
 	}
    }
 
@@ -301,9 +321,10 @@ std::vector<unsigned> *trace;
         xposl = 25 * (qdcS[3]+qdcL[3] + qdcS[0]+qdcL[0]) / (qdcS[0]+qdcL[0] + qdcS[1]+qdcL[1] + qdcS[2]+qdcL[2] + qdcS[3]+qdcL[3]);
         yposl = 25 * (qdcS[0]+qdcL[0] + qdcS[1]+qdcL[1]) / (qdcS[0]+qdcL[0] + qdcS[1]+qdcL[1] + qdcS[2]+qdcL[2] + qdcS[3]+qdcL[3]);
        }
-   if(xah > 0 && xbh > 0 && yah > 0 && ybh > 0){
-        xposh = 25 * (ybh + xah) / (xah + xbh + yah + ybh);
-        yposh = 25 * (xah + xbh) / (xah + xbh + yah + ybh);
+
+   if(qdcS[4]+qdcL[4] > 0 && qdcS[5]+qdcL[5] > 0 && qdcS[6]+qdcL[6] > 0 && qdcS[7]+qdcL[7] > 0){
+        xposh = 25 * (qdcS[7]+qdcL[7] + qdcS[4]+qdcL[4]) / (qdcS[4]+qdcL[4] + qdcS[5]+qdcL[5] + qdcS[6]+qdcL[6] + qdcS[7]+qdcL[7]);
+        yposh = 25 * (qdcS[4]+qdcL[4] + qdcS[5]+qdcL[5]) / (qdcS[4]+qdcL[4] + qdcS[5]+qdcL[5] + qdcS[6]+qdcL[6] + qdcS[7]+qdcL[7]);
        }
 
   if(iDyn>0 || (ixa>0 && ixb>0 && iya>0 && iyb>0)) 
